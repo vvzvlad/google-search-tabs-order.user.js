@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Search Tabs — Fix Order
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.2
 // @description  Fixes tab order in Google Search, hides unwanted tabs
 // @match        https://www.google.com/search*
 // @grant        none
@@ -17,19 +17,21 @@
   // hidden: true  — hide the tab
   // hidden: false — keep the tab visible
   // ─────────────────────────────────────────────────────────────────
+  // Each entry lists English and Russian label variants so the script works
+  // regardless of the Google interface language.
   const TAB_ORDER = [
-    { label: 'All',          hidden: false },
-    { label: 'Images',       hidden: false },
-    { label: 'Videos',       hidden: false },
-    { label: 'Forums',       hidden: false },
-    { label: 'Short videos', hidden: true  },
-    { label: 'Shopping',     hidden: true  },
-    { label: 'AI Mode',      hidden: true  },
-    { label: 'More',         hidden: false }, // dropdown containing News, Maps, Books, etc.
+    { labels: ['All',          'Все'],             hidden: false },
+    { labels: ['Images',       'Картинки'],         hidden: false },
+    { labels: ['Videos',       'Видео'],            hidden: false },
+    { labels: ['Forums',       'Форумы'],           hidden: false },
+    { labels: ['Short videos', 'Короткие видео'],   hidden: true  },
+    { labels: ['Shopping',     'Покупки'],          hidden: true  },
+    { labels: ['AI Mode',      'Режим ИИ'],         hidden: true  },
+    { labels: ['More',         'Ещё'],              hidden: false }, // dropdown containing News, Maps, Books, etc.
   ];
 
-  // Collect all known labels (lowercase) for fast lookup
-  const KNOWN_LABELS = new Set(TAB_ORDER.map(c => c.label.toLowerCase()));
+  // Flat-map all label variants (lowercase) into a single Set for fast lookup
+  const KNOWN_LABELS = new Set(TAB_ORDER.flatMap(c => c.labels.map(l => l.toLowerCase())));
 
   // ─────────────────────────────────────────────────────────────────
   // Dynamically locate the tabs container.
@@ -108,7 +110,7 @@
     const ordered = [];
     for (const cfg of TAB_ORDER) {
       const el = items.find(
-        i => getTabLabel(i).toLowerCase() === cfg.label.toLowerCase()
+        i => cfg.labels.some(l => l.toLowerCase() === getTabLabel(i).toLowerCase())
       );
       if (!el) continue;
       el.style.display = cfg.hidden ? 'none' : '';
@@ -118,7 +120,7 @@
     // Hide any tab not listed in TAB_ORDER
     for (const el of items) {
       const isKnown = TAB_ORDER.some(
-        c => getTabLabel(el).toLowerCase() === c.label.toLowerCase()
+        c => c.labels.some(l => l.toLowerCase() === getTabLabel(el).toLowerCase())
       );
       if (!isKnown) el.style.display = 'none';
     }
