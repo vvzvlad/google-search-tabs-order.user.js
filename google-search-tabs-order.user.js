@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Search Tabs — Fix Order
 // @namespace    http://tampermonkey.net/
-// @version      2.2
+// @version      2.3
 // @description  Fixes tab order in Google Search, hides unwanted tabs
 // @match        https://www.google.com/search*
 // @grant        none
@@ -23,11 +23,13 @@
     { labels: ['All',          'Все'],             hidden: false },
     { labels: ['Images',       'Картинки'],         hidden: false },
     { labels: ['Videos',       'Видео'],            hidden: false },
+    { labels: ['News',         'Новости'],          hidden: false },
     { labels: ['Forums',       'Форумы'],           hidden: false },
     { labels: ['Short videos', 'Короткие видео'],   hidden: true  },
     { labels: ['Shopping',     'Покупки'],          hidden: true  },
     { labels: ['AI Mode',      'Режим ИИ'],         hidden: true  },
-    { labels: ['More',         'Ещё'],              hidden: false }, // dropdown containing News, Maps, Books, etc.
+    { labels: ['More',         'Ещё'],              hidden: false }, // dropdown containing Maps, Books, Flights, etc.
+    { labels: ['Tools',        'Инструменты'],      hidden: false }, // filter button (date range, etc.)
   ];
 
   // Flat-map all label variants (lowercase) into a single Set for fast lookup
