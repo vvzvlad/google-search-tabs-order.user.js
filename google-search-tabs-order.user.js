@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Google Search Tabs — Fix Order
 // @namespace    http://tampermonkey.net/
-// @version      2.3
+// @version      2.4
 // @description  Fixes tab order in Google Search, hides unwanted tabs
 // @match        https://www.google.com/search*
 // @grant        none
@@ -93,9 +93,6 @@
     return el.textContent.trim();
   }
 
-  // Guard flag: prevents MutationObserver from re-triggering while we
-  // are ourselves mutating the DOM via appendChild.
-  let busy = false;
   let debounceTimer = null;
 
   function reorderTabs() {
@@ -108,18 +105,30 @@
     const items = [...container.children];
     if (items.length === 0) return false;
 
-    // Build an ordered array of elements matching TAB_ORDER entries
-    const ordered = [];
+    // Use CSS flex order to visually reorder tabs WITHOUT moving DOM nodes.
+    // Moving nodes via appendChild breaks Google's internal click-event routing,
+    // causing the first click after a reorder to be silently swallowed.
+    container.style.display = 'flex';
+
+    // Reset order on all children to clear any stale values from previous runs
+    for (const el of items) el.style.order = '';
+
+    // Apply visibility and CSS order index for each configured tab
+    let orderIdx = 0;
     for (const cfg of TAB_ORDER) {
       const el = items.find(
         i => cfg.labels.some(l => l.toLowerCase() === getTabLabel(i).toLowerCase())
       );
       if (!el) continue;
-      el.style.display = cfg.hidden ? 'none' : '';
-      ordered.push(el);
+      if (cfg.hidden) {
+        el.style.display = 'none';
+      } else {
+        el.style.display = '';
+        el.style.order = String(orderIdx++);
+      }
     }
 
-    // Hide any tab not listed in TAB_ORDER
+    // Hide any tab not listed in TAB_ORDER config
     for (const el of items) {
       const isKnown = TAB_ORDER.some(
         c => c.labels.some(l => l.toLowerCase() === getTabLabel(el).toLowerCase())
@@ -127,18 +136,11 @@
       if (!isKnown) el.style.display = 'none';
     }
 
-    // Re-insert tabs in the desired order.
-    // appendChild on an already-inserted element moves it — no cloning needed.
-    busy = true;
-    for (const el of ordered) container.appendChild(el);
-    busy = false;
-
     return true;
   }
 
   // Debounce: coalesce rapid mutation bursts into a single reorderTabs call
   function scheduleReorder() {
-    if (busy) return; // skip mutations triggered by our own DOM changes
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(reorderTabs, 80);
   }
